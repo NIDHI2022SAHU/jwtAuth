@@ -2,7 +2,7 @@ package com.example.day2jwt.controller;
 
 import org.springframework.web.bind.annotation.*;
 
-import com.example.day2jwt.JwtService;
+import com.example.day2jwt.service.JwtService;
 
 import java.util.Map;
 
