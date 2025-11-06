@@ -1,5 +1,8 @@
 package com.example.day2jwt.config;
 
+import com.example.day2jwt.entity.UserEntity;
+import com.example.day2jwt.service.JwtService;
+import com.example.day2jwt.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,8 +17,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.day2jwt.service.JwtService;
-
 import java.io.IOException;
 import java.util.Collections;
 
@@ -24,12 +25,14 @@ import java.util.Collections;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserService userService;
+
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         try {
@@ -40,23 +43,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String token = authHeader.substring(7); // Remove "Bearer "
+            String token = authHeader.substring(7);
             String username = jwtService.extractUsername(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                if (jwtService.isTokenValid(token, username)) {
+                // Fetch user from DB to check current tokenVersion
+                UserEntity user = userService.getByUsername(username);
 
-                    // Ideally, extract roles from token instead of empty list
+                if (jwtService.isTokenValid(token, user)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             new User(username, "", Collections.emptyList()),
                             null,
-                            Collections.emptyList()
-                    );
+                            Collections.emptyList());
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    logger.warn("Invalid JWT token for user: {}", username);
+                    logger.warn("Invalid or outdated JWT token for user: {}", username);
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
                     return;
                 }

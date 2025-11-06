@@ -5,6 +5,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.example.day2jwt.entity.UserEntity;
+
 import java.security.Key;
 import java.util.Date;
 import java.util.Map;
@@ -13,10 +15,10 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret}") // Move secret to application.properties
+    @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}") // Token expiration in milliseconds
+    @Value("${jwt.expiration}")
     private long jwtExpirationMs;
 
     // Generate signing key
@@ -41,7 +43,18 @@ public class JwtService {
 
     // Extract username (subject) from token
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (ExpiredJwtException e) {
+            return null;
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public Integer extractTokenVersion(String token) {
+        Object version = parseToken(token).getBody().get("tokenVersion");
+        return version != null ? Integer.parseInt(version.toString()) : 0;
     }
 
     // Extract expiration date from token
@@ -68,13 +81,23 @@ public class JwtService {
         }
     }
 
-    // Validate token: username matches & not expired
-    public boolean isTokenValid(String token, String username) {
+    public boolean isTokenValid(String token, UserEntity user) {
         final String extractedUsername = extractUsername(token);
-        return extractedUsername.equals(username) && !isTokenExpired(token);
+        final Integer extractedVersion = extractTokenVersion(token);
+
+        return extractedUsername.equals(user.getUsername())
+                && extractedVersion.equals(user.getTokenVersion())
+                && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
+    }
+
+    private Jws<Claims> parseToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token);
     }
 }

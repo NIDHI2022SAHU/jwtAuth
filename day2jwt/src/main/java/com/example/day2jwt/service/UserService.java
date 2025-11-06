@@ -1,8 +1,14 @@
 package com.example.day2jwt.service;
 
+import com.example.day2jwt.dto.UserRequestDTO;
 import com.example.day2jwt.entity.UserEntity;
 import com.example.day2jwt.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +23,9 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     // Signup: save user in DB
-    public UserEntity signup(String username, String password) {
+    public UserEntity signup(UserRequestDTO request) {
+        String username = request.getUsername();
+        String password = request.getPassword();
         logger.info("Signup attempt for username: {}", username);
 
         if (userRepository.findByUsername(username).isPresent()) {
@@ -28,9 +36,10 @@ public class UserService {
         UserEntity user = UserEntity.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))
+                .tokenVersion(0)
                 .build();
 
-        UserEntity savedUser = userRepository.save(user);
+        UserEntity savedUser = Objects.requireNonNull(userRepository.save(user), "Saved user is null");
         logger.info("User '{}' registered successfully with ID {}", username, savedUser.getId());
 
         return savedUser;
@@ -47,5 +56,13 @@ public class UserService {
         boolean matches = passwordEncoder.matches(rawPassword, user.getPassword());
         logger.info("Password validation for user '{}': {}", user.getUsername(), matches ? "SUCCESS" : "FAILURE");
         return matches;
+    }
+
+    @Transactional
+    public void logout(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
     }
 }
