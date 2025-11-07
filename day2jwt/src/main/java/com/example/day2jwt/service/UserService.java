@@ -65,4 +65,17 @@ public class UserService {
         user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
     }
+
+    @Transactional
+    public void saveRefreshToken(String username, String refreshToken) {
+        UserEntity user = getByUsername(username);
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
+    }
+
+    public boolean validateRefreshToken(String username, String refreshToken) {
+        UserEntity user = getByUsername(username);
+        return refreshToken.equals(user.getRefreshToken());
+    }
+
 }

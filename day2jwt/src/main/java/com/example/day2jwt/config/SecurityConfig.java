@@ -19,23 +19,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF for stateless REST APIs
-            .csrf(csrf -> csrf.disable())
+                // Disable CSRF for stateless REST APIs
+                .csrf(csrf -> csrf.disable())
 
-            // Define endpoint access rules
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()   // Public endpoints (login, register)
-                .requestMatchers("/api/**").authenticated() // All /api endpoints require authentication
-                .anyRequest().denyAll() // Deny everything else
-            )
+                // Define endpoint access rules
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll() // Public endpoints (login, register)
+                        .requestMatchers("/api/**").authenticated() // All /api endpoints require authentication
+                        .anyRequest().denyAll() // Deny everything else
+                )
 
-            // Set session management to stateless since we use JWT
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+                // Set session management to stateless since we use JWT
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // Add JWT filter before UsernamePasswordAuthenticationFilter
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // Add JWT filter before UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -1,21 +1,26 @@
 package com.example.day2jwt.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-@Entity
-@Table(name = "users")
-@EntityListeners(AuditingEntityListener.class)
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @Getter
 @Setter
+@Entity
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "users")
 public class UserEntity {
 
     @Id
@@ -39,4 +44,7 @@ public class UserEntity {
     @LastModifiedDate
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Column(name = "refresh_token", length = 512)
+    private String refreshToken;
 }
